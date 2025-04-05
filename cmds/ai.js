@@ -45,7 +45,7 @@ module.exports = {
                 writer.on("finish", () => {
                     api.sendMessage(
                         {
-                            body: `{prompt}`,
+                            body: `${prompt}`,
                             attachment: fs.createReadStream(imagePath),
                         },
                         threadID,
