@@ -72,10 +72,8 @@ module.exports = {
         const inboxMessage =
           `🛡️ TOKEN VERIFIED ✅\n\n` +
           `📩 From: ${from}\n` +
-          `🔖 Subject: ${subject}\n` +
-          `📅 Date: ${date}\n\n` +
-          `━━━━━━━━━━━━━━━━\n` +
-          `${body}`;
+          `🔖 Subject: ${subject}
+             ━━━━━━━━━━━━━━━━`;
 
         return api.sendMessage(inboxMessage, threadID, messageID);
       } catch (error) {
