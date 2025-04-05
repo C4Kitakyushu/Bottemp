@@ -1,11 +1,13 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
 module.exports = {
   name: "flux",
   aliases: [],
   usage: "flux <prompt>",
   description: "Generate a Flux Realism image using a custom prompt.",
-  version: "1.0.0",
+  version: "1.0.1",
 
   execute: async ({ api, event, args }) => {
     const { threadID, messageID } = event;
@@ -21,25 +23,38 @@ module.exports = {
     try {
       const response = await axios.get(apiUrl);
       const { html } = response.data.data;
-
       const matches = [...html.matchAll(/<a href="(https:\/\/aicdn\.picsart\.com\/[a-zA-Z0-9-]+\.jpg)"/g)];
-      const imageUrls = matches.map(match => match[1]);
+      const imageUrls = matches.map((m) => m[1]);
 
-      if (!imageUrls || imageUrls.length < 2) {
+      if (!imageUrls.length) {
         return send("❌ Image generation failed. Please try a different prompt.");
       }
 
+      // Download first image
+      const imgUrl = imageUrls[0];
+      const tempPath = path.join(__dirname, "cache", `flux_${Date.now()}.jpg`);
+      await fs.ensureDir(path.dirname(tempPath));
+
+      const imgRes = await axios.get(imgUrl, { responseType: "stream" });
+      await new Promise((resolve, reject) => {
+        const w = fs.createWriteStream(tempPath);
+        imgRes.data.pipe(w);
+        w.on("finish", resolve);
+        w.on("error", reject);
+      });
+
+      // Send and cleanup
       await api.sendMessage(
         {
-          body: `✅ Here is your Flux image for: "${prompt}"`,
-          attachment: await global.utils.getStreamFromURL(imageUrls[0]),
+          body: `✅ Flux image for: "${prompt}"`,
+          attachment: fs.createReadStream(tempPath),
         },
         threadID,
+        () => fs.unlinkSync(tempPath),
         messageID
       );
-
-    } catch (error) {
-      console.error("❌ Error generating Flux image:", error);
+    } catch (err) {
+      console.error("❌ Flux error:", err);
       send("❌ An error occurred while generating the image. Please try again.");
     }
   },
