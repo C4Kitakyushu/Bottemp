@@ -1,4 +1,6 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
 module.exports = {
   name: "removebg",
@@ -24,19 +26,26 @@ module.exports = {
       );
     }
 
-    // Notify user that processing has started
     await api.sendMessage("⌛ Removing background, please wait...", threadID, messageID);
 
     try {
       const removeBgUrl = `https://xnilnew404.onrender.com/xnil/removebg?image=${encodeURIComponent(imageUrl)}`;
+      const response = await axios.get(removeBgUrl, { responseType: "arraybuffer" });
+
+      const filePath = path.join(__dirname, "cache", `removed-bg-${Date.now()}.png`);
+      await fs.ensureDir(path.dirname(filePath));
+      await fs.writeFile(filePath, response.data);
 
       await api.sendMessage(
         {
-          attachment: await global.utils.getStreamFromURL(removeBgUrl)
+          attachment: fs.createReadStream(filePath)
         },
         threadID,
         messageID
       );
+
+      // Clean up
+      setTimeout(() => fs.unlink(filePath), 10 * 1000);
     } catch (error) {
       console.error("Error removing background:", error);
       await api.sendMessage(
