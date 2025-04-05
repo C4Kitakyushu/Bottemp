@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports = {
   name: "recolor",
-  usage: "remini (must be used with an image attachment or reply to an image)",
+  usage: "recolor (must be used with an image attachment or reply to an image)",
   description: "Enhance an image using AI via the Recolor API.",
 
   execute: async ({ api, event, args }) => {
