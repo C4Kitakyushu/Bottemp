@@ -3,65 +3,66 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
-    name: "event",
+    name: "welcome",
+
     async execute(api, event) {
         const { logMessageType, logMessageData, threadID } = event;
 
         try {
-            // 🟢 Handle Member Join (Rejoin Supported)
             if (logMessageType === "log:subscribe") {
                 const userID = logMessageData.addedParticipants[0].userFbId;
 
-                // Get user info (name, avatar, nickname)
                 api.getUserInfo(userID, async (err, data) => {
                     if (err) return console.error("❌ Error fetching user info:", err);
 
-                    const userName = data[userID].name || "New Member";
-                    const avatarURL = data[userID].thumbSrc || "https://i.imgur.com/placeholder.png"; // Default avatar
-                    const nickname = data[userID].firstName || userName; // Use first name as nickname
+                    let userName = data[userID]?.name || "New Member";
 
-                    // 🟢 Generate Welcome Card URL
-                    const welcomeCardURL = `https://kaiz-apis.gleeze.com/api/welcomecard?background=https%3A%2F%2Fi.imgur.com%2FiKekhCb.jpeg&text1=${encodeURIComponent(nickname)}&text2=Welcome+${encodeURIComponent(userName)}&text3=Enjoy+your+stay!&avatar=${encodeURIComponent(avatarURL)}`;
+                    // Truncate name for aesthetics
+                    const maxNameLength = 15;
+                    if (userName.length > maxNameLength) {
+                        userName = userName.substring(0, maxNameLength - 3) + "...";
+                    }
+
+                    // Fetch thread info
+                    const threadInfo = await api.getThreadInfo(threadID);
+                    const groupName = threadInfo.threadName || "this group";
+                    const groupIcon = threadInfo.imageSrc || "https://i.ibb.co/G5mJZxs/rin.jpg";
+                    const memberCount = threadInfo.participantIDs.length;
+                    const background = threadInfo.imageSrc || "https://i.ibb.co/4YBNyvP/images-76.jpg";
+
+                    const welcomeURL = `http://87.106.100.187:6312/canvas/welcome?name=${encodeURIComponent(userName)}&groupname=${encodeURIComponent(groupName)}&groupicon=${encodeURIComponent(groupIcon)}&member=${memberCount}&uid=${userID}&background=${encodeURIComponent(background)}`;
 
                     try {
-                        // Fetch the welcome card image
-                        const response = await axios.get(welcomeCardURL, { responseType: "stream" });
-                        const imagePath = `./welcome_${userID}.png`;
+                        const response = await axios.get(welcomeURL, { responseType: "stream" });
+                        const imagePath = path.join(__dirname, `welcome_${userID}.jpg`);
                         const writer = fs.createWriteStream(imagePath);
 
                         response.data.pipe(writer);
                         writer.on("finish", () => {
-                            api.sendMessage({
-                                body: `👋 Welcome, ${userName}! 🎉\nEnjoy your stay in the group!`,
-                                attachment: fs.createReadStream(imagePath)
-                            }, threadID, () => fs.unlinkSync(imagePath));
+                            api.sendMessage(
+                                {
+                                    body: `👋 Everyone welcome ${userName} to ${groupName}!`,
+                                    attachment: fs.createReadStream(imagePath)
+                                },
+                                threadID,
+                                () => fs.unlinkSync(imagePath)
+                            );
                         });
 
-                        writer.on("error", (error) => {
-                            console.error("❌ Error writing welcome image:", error);
-                            api.sendMessage(`👋 Welcome, ${userName}!`, threadID);
+                        writer.on("error", (err) => {
+                            console.error("❌ Image write error:", err);
+                            api.sendMessage(`👋 Welcome ${userName} to ${groupName}!`, threadID);
                         });
 
                     } catch (error) {
-                        console.error("❌ Error fetching welcome card:", error);
-                        api.sendMessage(`👋 Welcome, ${userName}!`, threadID);
+                        console.error("❌ Error fetching welcome image:", error);
+                        api.sendMessage(`👋 Welcome ${userName} to ${groupName}!`, threadID);
                     }
                 });
             }
 
-            // 🟢 Handle Member Leave
-            if (logMessageType === "log:unsubscribe") {
-                const userID = logMessageData.leftParticipantFbId;
-
-                api.getUserInfo(userID, (err, data) => {
-                    if (err) return console.error("❌ Error fetching user info:", err);
-
-                    const userName = data[userID].name || "User";
-                    api.sendMessage(`😢 ${userName} has left the group.`, threadID);
-                });
-            }
-        } catch (error) {
-            console.error("❌ Error in welcome.js:", error);
+        } catch (err) {
+            console.error("❌ Error in welcomenoti:", err);
         }
     }
 };
