@@ -1,108 +1,98 @@
-const fs = require("fs");
 const axios = require("axios");
-const configPath = "./config.json";
 
 module.exports = {
   name: "tempmail",
-  usePrefix: false,
   usage: "tempmail gen | tempmail inbox <token>",
-  version: "1.0",
-  description: "Generate a temporary email address or fetch inbox messages",
+  description: "Generate a temporary email address or fetch inbox messages.",
 
-  execute: async ({ api, event }) => {
-    const { threadID: senderId, messageID: messageID } = event;
-    const { args } = event; // assuming you parse args into event.args
+  execute: async ({ api, event, args }) => {
+    const { threadID, messageID } = event;
 
-    if (!args[0]) {
+    if (!args || args.length === 0) {
       return api.sendMessage(
-        { body: "❗ Usage: `tempmail gen` or `tempmail inbox <token>`." },
-        senderId,
+        "❗ Usage: tempmail gen | tempmail inbox <token>",
+        threadID,
         messageID
       );
     }
 
     const subcommand = args[0].toLowerCase();
 
-    // GENERATE TEMPMAIL
+    // Handle 'gen' subcommand
     if (subcommand === "gen") {
       try {
         const { data } = await axios.get("https://kaiz-apis.gleeze.com/api/tempmail-create");
 
         if (!data?.token || !data?.address) {
           return api.sendMessage(
-            { body: "⚠️ Failed to generate email. Please try again later." },
-            senderId,
+            "⚠️ Failed to generate email. Please try again later.",
+            threadID,
             messageID
           );
         }
 
-        api.sendMessage(
-          {
-            body:
-              `📧 Generated Email: ${data.address}\n\n` +
-              `🔑 COPY YOUR TOKEN:\n${data.token}\n\n` +
-              `Check inbox with:\n` +
-              `tempmail inbox ${data.token}`
-          },
-          senderId,
-          messageID
-        );
-      } catch (err) {
-        console.error("Error generating email:", err);
-        api.sendMessage(
-          { body: "⚠️ An error occurred while generating the email." },
-          senderId,
+        const email = data.address;
+        const token = data.token;
+
+        const message =
+          `📧 Generated Email: ${email}\n\n` +
+          `🔑 COPY YOUR TOKEN:\n${token}\n\n` +
+          `Check inbox with:\n` +
+          `tempmail inbox ${token}`;
+
+        return api.sendMessage(message, threadID, messageID);
+      } catch (error) {
+        console.error("Error generating tempmail:", error);
+        return api.sendMessage(
+          "⚠️ An error occurred while generating the email.",
+          threadID,
           messageID
         );
       }
+    }
 
-    // FETCH INBOX
-    } else if (subcommand === "inbox" && args[1]) {
+    // Handle 'inbox' subcommand
+    if (subcommand === "inbox" && args[1]) {
       const token = args[1];
+
       try {
-        const { data } = await axios.get(
-          `https://kaiz-apis.gleeze.com/api/tempmail-inbox?token=${token}`
-        );
+        const { data } = await axios.get(`https://kaiz-apis.gleeze.com/api/tempmail-inbox?token=${token}`);
         const inbox = data.emails || [];
 
         if (inbox.length === 0) {
-          api.sendMessage(
-            { body: "📭 No messages found in your inbox." },
-            senderId,
-            messageID
-          );
-        } else {
-          const mail = inbox[0];
-          api.sendMessage(
-            {
-              body:
-                `🛡️ TOKEN VERIFIED ✅\n\n` +
-                `📩 From: ${mail.from || "Unknown"}\n` +
-                `🔖 Subject: ${mail.subject || "No Subject"}\n` +
-                `📅 Date: ${mail.date || "Unknown Date"}\n\n` +
-                `━━━━━━━━━━━━━━━━\n` +
-                `${mail.body || "No content available."}`
-            },
-            senderId,
-            messageID
-          );
+          return api.sendMessage("📭 No messages found in your inbox.", threadID, messageID);
         }
-      } catch (err) {
-        console.error("Error fetching inbox:", err);
-        api.sendMessage(
-          { body: "⚠️ An error occurred while fetching the inbox." },
-          senderId,
+
+        const mail = inbox[0];
+        const from = mail.from || "Unknown Sender";
+        const subject = mail.subject || "No Subject";
+        const date = mail.date || "Unknown Date";
+        const body = mail.body || "No content available.";
+
+        const inboxMessage =
+          `🛡️ TOKEN VERIFIED ✅\n\n` +
+          `📩 From: ${from}\n` +
+          `🔖 Subject: ${subject}\n` +
+          `📅 Date: ${date}\n\n` +
+          `━━━━━━━━━━━━━━━━\n` +
+          `${body}`;
+
+        return api.sendMessage(inboxMessage, threadID, messageID);
+      } catch (error) {
+        console.error("Error fetching inbox:", error);
+        return api.sendMessage(
+          "⚠️ An error occurred while fetching the inbox.",
+          threadID,
           messageID
         );
       }
-
-    // INVALID USAGE
-    } else {
-      api.sendMessage(
-        { body: "❗ Usage: `tempmail gen` or `tempmail inbox <token>`." },
-        senderId,
-        messageID
-      );
     }
+
+    // Invalid usage
+    return api.sendMessage(
+      "❗ Usage: tempmail gen | tempmail inbox <token>",
+      threadID,
+      messageID
+    );
   }
 };
