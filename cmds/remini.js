@@ -1,4 +1,6 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
 module.exports = {
   name: "remini",
@@ -24,19 +26,28 @@ module.exports = {
       );
     }
 
-    // Notify user the process is starting
     await api.sendMessage("⌛ Enhancing image, please wait...", threadID, messageID);
 
     try {
       const enhanceUrl = `https://xnilnew404.onrender.com/xnil/remini?imageUrl=${encodeURIComponent(imageUrl)}&method=enhance`;
 
-      await api.sendMessage(
-        {
-          attachment: await global.utils.getStreamFromURL(enhanceUrl)
-        },
-        threadID,
-        messageID
-      );
+      // Download enhanced image
+      const tempPath = path.join(__dirname, `enhanced_${Date.now()}.jpg`);
+      const response = await axios.get(enhanceUrl, { responseType: "stream" });
+
+      const writer = fs.createWriteStream(tempPath);
+      response.data.pipe(writer);
+
+      writer.on("finish", async () => {
+        const readStream = fs.createReadStream(tempPath);
+        await api.sendMessage({ attachment: readStream }, threadID, messageID);
+        fs.unlink(tempPath); // cleanup temp file
+      });
+
+      writer.on("error", async (err) => {
+        console.error("❌ Error saving enhanced image:", err);
+        await api.sendMessage("❌ Failed to process the image.", threadID, messageID);
+      });
     } catch (error) {
       console.error("Error enhancing image:", error);
       await api.sendMessage(
