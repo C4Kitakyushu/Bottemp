@@ -1,7 +1,7 @@
 module.exports = {
   name: "adduser",
   aliases: ["add"],
-  usage: "adduser <uid or profile link>",
+  usage: "adduser <uid>",
   description: "Add a user to the group using their UID.",
   version: "1.0.1",
 
