@@ -8,7 +8,6 @@ module.exports = {
   usage: "anim [reply to image]",
   description: "Convert photo to anime style artwork.",
   version: "2.2",
-  cooldowns: 10,
 
   execute: async ({ api, event }) => {
     const { threadID, messageID, messageReply } = event;
