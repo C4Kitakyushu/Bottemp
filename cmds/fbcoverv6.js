@@ -17,7 +17,7 @@ module.exports = {
       return send(
         `❌ Please provide all required fields.\n\n` +
         `Usage:\nfbcoverv6 <uid> | <name> | <gender> | <birthday> | <love> | <follower> |<location> | <hometown> \n` +
-        `Example:\nfbcoverv6 4 | Mark Zuckerberg |Male|May 14, 1984 | Priscilla Chan | 119009952 |Palo Alto, California | Dobbs Ferry, New York`
+        `Example:\nfbcoverv6 4 | Mark Zuckerberg |Male | May 14, 1984 | Priscilla Chan | 119009952 |Palo Alto, California | Dobbs Ferry, New York`
       );
     }
 
@@ -25,7 +25,7 @@ module.exports = {
     if (details.length < 8) {
       return send(
         `❌ Invalid format. Use " | " to separate fields.\n\n` +
-        `Example:\nfbcoverv6 4|Mark Zuckerberg|Male|May 14, 1984|Priscilla Chan|119009952|Palo Alto, California|Dobbs Ferry, New York`
+        `Example:\nfbcoverv6 4 | Mark Zuckerberg |Male | May 14, 1984 | Priscilla Chan | 119009952 | Palo Alto, California|Dobbs Ferry, New York`
       );
     }
 
