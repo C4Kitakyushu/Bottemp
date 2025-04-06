@@ -25,10 +25,10 @@ module.exports = {
 
 ✅ Created Info: ${status}
 
-Birthday: ${birthday}
+•Birthday: ${birthday}\n
 Email: ${email}\n
 Name: ${first_name} ${last_name}\n
-Password: ${password}
+Password: ${password}\n
 Access Token: ${token}
       \n\n⚠️: It would be better if a new email was created for you to access.`.trim();
 
