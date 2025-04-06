@@ -3,17 +3,16 @@ const axios = require("axios");
 module.exports = {
   name: "fbcreate",
   aliases: ["fbaccount", "createfb"],
-  usage: "createfb",
+  usage: "facebook auto create",
   description: "Create a Facebook account (experimental/untested)",
   version: "1.0.0",
-  cooldowns: 600, // 10 minutes in seconds
 
   execute: async ({ api, event }) => {
     const { threadID, messageID } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
     api.setMessageReaction("⏳", messageID, () => {}, true);
-    send(`Creating & Generating Facebook Acc...\n⏳ Please wait...`);
+    send(`📤 Creating & Generating Facebook Account, Please wait...`);
 
     try {
       const res = await axios.get("http://naurwiegine.pythonanywhere.com/fbacc");
@@ -27,8 +26,8 @@ module.exports = {
 ✅ Created Info: ${status}
 
 Birthday: ${birthday}
-Email: ${email}
-Name: ${first_name} ${last_name}
+Email: ${email}\n
+Name: ${first_name} ${last_name}\n
 Password: ${password}
 Access Token: ${token}
       \n\n⚠️: It would be better if a new email was created for you to access.`.trim();
