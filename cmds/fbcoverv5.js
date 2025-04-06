@@ -25,7 +25,7 @@ module.exports = {
     if (details.length < 4) {
       return send(
         `❌ Invalid format. Use " | " to separate fields.\n\n` +
-        `Example:\nfbcoverv5 Deku|4|Midoriya|blue`
+        `Example:\nfbcoverv5 Deku| 4 | Midoriya | blue`
       );
     }
 
