@@ -13,7 +13,7 @@ module.exports = {
   execute: async ({ api, event, args }) => {
     const text = args.join(" ");
     if (!text) {
-      return api.sendMessage("Usage: jesus <text>", event.threadID);
+      return api.sendMessage("Usage: susje <text>", event.threadID);
     }
 
     const encodedText = encodeURIComponent(text);
@@ -23,7 +23,7 @@ module.exports = {
 
     try {
       await fs.ensureDir(cachePath);
-      api.sendMessage("Generating your Jesus-style image, please wait...", event.threadID);
+      api.sendMessage("Generating your image, please wait...", event.threadID);
 
       const response = await axios({
         url,
