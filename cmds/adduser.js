@@ -2,7 +2,7 @@ module.exports = {
   name: "adduser",
   aliases: ["add"],
   usage: "adduser <uid or profile link>",
-  description: "Add a user to the group using their UID or profile link.",
+  description: "Add a user to the group using their UID.",
   version: "1.0.1",
 
   execute: async ({ api, event, args }) => {
