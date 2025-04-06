@@ -4,70 +4,70 @@ const path = require("path");
 
 module.exports = {
   name: "pinterest",
+  usage: "pinterest <search term> - <number of images>",
   description: "Search for images on Pinterest",
-  author: "developer",
+  version: "1.0.0",
 
-  async execute(senderId, args, pageAccessToken, sendMessage) {
+  execute: async ({ api, event, args }) => {
+    const { threadID, messageID } = event;
+    const send = (body, attachment = null) =>
+      api.sendMessage(
+        attachment ? { body, attachment } : { body },
+        threadID,
+        messageID
+      );
+
     try {
       if (!args.length) {
-        return sendMessage(senderId, {
-          text: "Usage: pinterest [search term] - [number of images]\nexample: pinterest dog - 10"
-        }, pageAccessToken);
+        return send(
+          "Usage: pinterest [search term] - [number of images]\nExample: pinterest dog - 10"
+        );
       }
 
       const [searchTerm, count] = args.join(" ").split(" - ");
-
       if (!searchTerm || !count) {
-        return sendMessage(senderId, {
-          text: "🖼️ Invalid format! Use the command like this:\n\npinterest [search term] - [number of images]\nExample: pinterest cats - 5"
-        }, pageAccessToken);
+        return send(
+          "🖼️ Invalid format! Use:\n`pinterest [search term] - [number]`\nExample: pinterest cats - 5"
+        );
       }
 
-      const numOfImages = parseInt(count) || 5;
-      if (isNaN(numOfImages) || numOfImages < 1 || numOfImages > 20) {
-        return sendMessage(senderId, {
-          text: "⚠️ Enter a number between 1 and 20.\n\nExample: pinterest car - 4"
-        }, pageAccessToken);
+      const num = parseInt(count, 10) || 5;
+      if (isNaN(num) || num < 1 || num > 20) {
+        return send("⚠️ Number must be between 1 and 20.");
       }
 
-      const apiUrl = `https://kaiz-apis.gleeze.com/api/pinterest?search=${encodeURIComponent(searchTerm)}`;
-      const response = await axios.get(apiUrl);
-      const data = response.data.data;
-
-      if (!data || data.length === 0) {
-        return sendMessage(senderId, { text: `No results found for "${searchTerm}".` }, pageAccessToken);
+      const apiUrl = `https://kaiz-apis.gleeze.com/api/pinterest?search=${encodeURIComponent(
+        searchTerm
+      )}`;
+      const { data } = await axios.get(apiUrl);
+      const list = data.data;
+      if (!list || !list.length) {
+        return send(`No results found for "${searchTerm}".`);
       }
 
-      const imageUrls = data.slice(0, numOfImages);
       const cacheDir = path.join(__dirname, "cache");
       await fs.ensureDir(cacheDir);
 
-      for (const [i, url] of imageUrls.entries()) {
+      for (let i = 0; i < Math.min(num, list.length); i++) {
+        const url = list[i];
         const imgPath = path.join(cacheDir, `pinterest_${Date.now()}_${i}.jpg`);
 
-        // Download image
-        const imgRes = await axios.get(url, { responseType: "stream" });
-        await new Promise((resolve, reject) => {
-          const writer = fs.createWriteStream(imgPath);
-          imgRes.data.pipe(writer);
-          writer.on("finish", resolve);
-          writer.on("error", reject);
+        // download
+        const res = await axios.get(url, { responseType: "stream" });
+        await new Promise((resol, rej) => {
+          const w = fs.createWriteStream(imgPath);
+          res.data.pipe(w);
+          w.on("finish", resol);
+          w.on("error", rej);
         });
 
-        // Send image
-        await sendMessage(senderId, {
-          attachment: fs.createReadStream(imgPath)
-        }, pageAccessToken);
-
-        // Delete temp file
+        // send
+        await send("", fs.createReadStream(imgPath));
         await fs.unlink(imgPath);
       }
-
-    } catch (error) {
-      console.error("Failed to retrieve images from Pinterest:", error);
-      sendMessage(senderId, {
-        text: `❌ Failed to retrieve images. Error: ${error.message || error}`
-      }, pageAccessToken);
+    } catch (err) {
+      console.error("Pinterest error:", err);
+      send(`❌ Failed to retrieve images. ${err.message || ""}`);
     }
-  }
-}
+  },
+};
