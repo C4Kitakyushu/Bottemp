@@ -19,7 +19,7 @@ module.exports = {
 
                 const allHelpMessage = `
  ╔════════════╗
-   All Commands 
+    All Commands 
  ╚════════════╝
 ${allCommands}
 
@@ -37,7 +37,7 @@ Use 'help [command_name]' for details.`;
 
             const commandHelpMessage = `
 ╔════════════╗
-  Command Info 
+   Command Info 
 ╚════════════╝
 Name: ${command.name}
 Usage: ${command.usage}
@@ -56,7 +56,7 @@ Version: ${command.version}`;
 
         const helpMessage = `
 ╔════════════╗
-  Bot Commands 
+   Bot Commands 
 ╚════════════╝
 Here are some commands:  
 ${commandArray}
