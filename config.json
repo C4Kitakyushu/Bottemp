@@ -1,13 +1,16 @@
 {
-  "prefix": "-",
-  "ownerID": "61556130417570",
   "option": {
-    "forceLogin": true,
+    "forceLogin": false,
     "listenEvents": true,
-    "logLevel": "silent",
+    "logLevel": "error",
     "selfListen": false,
-    "updatePresence": true,
-    "autoMarkDelivery": true,
-    "autoMarkRead": true
-  }
+    "online": true,
+    "autoMarkDelivery": false,
+    "autoMarkRead": false
+  },
+  "botPrefix": "/",
+  "botName": "Reiji",
+  "botAdmins": [
+    "61556130417570"
+  ]
 }
