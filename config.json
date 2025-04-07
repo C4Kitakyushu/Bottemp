@@ -1,17 +1,13 @@
 {
+  "prefix": "-",
+  "ownerID": "61556130417570",
   "option": {
-    "forceLogin": false,
+    "forceLogin": true,
     "listenEvents": true,
-    "logLevel": "error",
+    "logLevel": "silent",
     "selfListen": false,
-    "online": true,
-    "autoMarkDelivery": false,
-    "autoMarkRead": false
-  },
-  "botPrefix": "-",
-  "botName": "friendly straww🍓🎀",
-  "botAdmins": [
-    "61556130417570"
-  ]
+    "updatePresence": true,
+    "autoMarkDelivery": true,
+    "autoMarkRead": true
+  }
 }
-
