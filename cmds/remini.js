@@ -4,57 +4,49 @@ const path = require("path");
 
 module.exports = {
   name: "remini",
-  usage: "remini (must be used with an image attachment or reply to an image)",
-  description: "Enhance an image using AI via the Remini API.",
+  aliases: ["enhance"],
+  usage: "remini (reply to an image)",
+  description: "Enhance an image using the Remini API.",
 
-  execute: async ({ api, event, args }) => {
+  execute: async ({ api, event }) => {
     const { threadID, messageID, messageReply } = event;
-    let imageUrl;
+    const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    // If the message is a reply to another message containing an image
-    if (messageReply && messageReply.attachments.length > 0) {
-      const attachment = messageReply.attachments[0];
-      if (attachment.type !== "photo") {
-        return api.sendMessage("⚠️ Please reply to an image to enhance it.", threadID, messageID);
-      }
-      imageUrl = attachment.url;
-    } else {
-      return api.sendMessage(
-        "❌ Please send an image or reply to an image with the message `remini` to enhance it.",
-        threadID,
-        messageID
-      );
+    // Ensure the user replied to an image
+    if (!messageReply?.attachments?.[0]?.url) {
+      return send("❌ Please reply to an image to enhance it.");
     }
 
-    await api.sendMessage("⌛ Enhancing image, please wait...", threadID, messageID);
+    const imageUrl = messageReply.attachments[0].url;
+    send("⌛ Enhancing image, please wait...");
+
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?url=${encodeURIComponent(imageUrl)}&stream=true`;
+    const tmpDir = path.join(__dirname, "cache");
+    const tmpFile = path.join(tmpDir, `remini_${Date.now()}.jpg`);
 
     try {
-      const enhanceUrl = `https://xnilnew404.onrender.com/xnil/remini?imageUrl=${encodeURIComponent(imageUrl)}&method=enhance`;
+      await fs.ensureDir(tmpDir);
 
-      // Download enhanced image
-      const tempPath = path.join(__dirname, `enhanced_${Date.now()}.jpg`);
-      const response = await axios.get(enhanceUrl, { responseType: "stream" });
-
-      const writer = fs.createWriteStream(tempPath);
+      const response = await axios.get(apiUrl, { responseType: "stream" });
+      const writer = fs.createWriteStream(tmpFile);
       response.data.pipe(writer);
 
       writer.on("finish", async () => {
-        const readStream = fs.createReadStream(tempPath);
-        await api.sendMessage({ attachment: readStream }, threadID, messageID);
-        fs.unlink(tempPath); // cleanup temp file
+        await api.sendMessage(
+          { attachment: fs.createReadStream(tmpFile) },
+          threadID,
+          () => fs.unlinkSync(tmpFile),
+          messageID
+        );
       });
 
-      writer.on("error", async (err) => {
-        console.error("❌ Error saving enhanced image:", err);
-        await api.sendMessage("❌ Failed to process the image.", threadID, messageID);
+      writer.on("error", (err) => {
+        console.error("File write error:", err);
+        send("❌ Failed to save the enhanced image.");
       });
-    } catch (error) {
-      console.error("Error enhancing image:", error);
-      await api.sendMessage(
-        "❌ An error occurred while enhancing the image. Please try again later.",
-        threadID,
-        messageID
-      );
+    } catch (err) {
+      console.error("Enhance error:", err);
+      send("❌ An error occurred while enhancing the image. Please try again later.");
     }
   },
 };
