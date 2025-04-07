@@ -3,7 +3,7 @@ const fs = require('fs-extra');
 const path = require('path');
 
 module.exports = {
-  name: 'raw',
+  name: 'fluxpro',
   description: 'Generate a flux pro raw image from a prompt.',
   usage: 'fluxpro <prompt>',
   version: '1.0.0',
