@@ -19,7 +19,7 @@ module.exports = {
     const imageUrl = messageReply.attachments[0].url;
     send("⌛ Removing background, please wait...");
 
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/removebg?url=${encodeURIComponent(imageUrl)}`;
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/removebgv2?url=${encodeURIComponent(imageUrl)}&stream=true`;
     const tmpDir = path.join(__dirname, "cache");
     const tmpFile = path.join(tmpDir, `no_bg_${Date.now()}.png`);
 
