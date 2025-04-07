@@ -7,9 +7,7 @@ module.exports = {
   description: "Accept or check pending friend requests.",
   version: "1.0.1",
   cooldowns: 5,
-  hasPrefix: true,
-  role: 2,
-  credits: "Developer",
+  admin: true,
 
   execute: async ({ api, event, args }) => {
     const { threadID, messageID } = event;
