@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports = {
   name: "dalle",
-  description: "Generate AI image using DALL·E 3.",
+  description: "Generate an AI image based on a prompt using DALL·E.",
   usage: "dalle <your prompt>",
   version: "1.0.0",
 
@@ -14,37 +14,33 @@ module.exports = {
 
     if (!prompt) {
       return api.sendMessage(
-        "❌ Please provide a prompt.\n\nExample:\ndalle3 a cyberpunk samurai riding a motorcycle",
+        "❌ Please provide a prompt.\n\nExample:\ndalle a girl walking in a futuristic city",
         threadID,
         messageID
       );
     }
 
-    await api.sendMessage("⏳ Generating image with DALL·E 3, please wait...", threadID, messageID);
+    await api.sendMessage("⏳ Generating image, please wait...", threadID, messageID);
 
     try {
-      const apiUrl = `https://api.zetsu.xyz/api/dalle-3?prompt=${encodeURIComponent(prompt)}&apikey=80836f3451c2b3392b832988e7b73cdb`;
-      const { data } = await axios.get(apiUrl);
+      const apiUrl = `https://hazeyyyy-rest-apis.onrender.com/api/dalle?prompt=${encodeURIComponent(prompt)}`;
+      const response = await axios.get(apiUrl);
 
-      if (!data || !data.url) {
+      if (!response.data || !response.data.image) {
         return api.sendMessage("❌ Failed to generate image. No image URL received.", threadID, messageID);
       }
 
-      const imgResponse = await axios.get(data.url, { responseType: "stream" });
-      const imgPath = path.join(__dirname, `dalle3_${Date.now()}.jpg`);
-      const writer = fs.createWriteStream(imgPath);
-      imgResponse.data.pipe(writer);
+      const imageResponse = await axios.get(response.data.image, { responseType: "stream" });
+      const filePath = path.join(__dirname, `dalle_${Date.now()}.jpg`);
+      const writer = fs.createWriteStream(filePath);
+      imageResponse.data.pipe(writer);
 
       writer.on("finish", async () => {
-        await api.sendMessage(
-          {
-            body: "✅ Here's your DALL·E 3 image:",
-            attachment: fs.createReadStream(imgPath),
-          },
-          threadID,
-          messageID
-        );
-        fs.unlinkSync(imgPath);
+        await api.sendMessage({
+          body: "✅ Here's your image:",
+          attachment: fs.createReadStream(filePath)
+        }, threadID, messageID);
+        fs.unlinkSync(filePath);
       });
 
       writer.on("error", (err) => {
@@ -52,8 +48,8 @@ module.exports = {
         api.sendMessage("❌ Failed to save generated image.", threadID, messageID);
       });
     } catch (error) {
-      console.error("DALL·E 3 API error:", error);
-      return api.sendMessage("❌ An error occurred while generating the image.", threadID, messageID);
+      console.error("DALL·E API error:", error);
+      api.sendMessage("❌ An error occurred while generating the image.", threadID, messageID);
     }
   },
 };
