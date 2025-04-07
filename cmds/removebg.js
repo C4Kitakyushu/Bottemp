@@ -4,55 +4,48 @@ const path = require("path");
 
 module.exports = {
   name: "removebg",
-  usage: "removebg (must be used with an image attachment or reply to an image)",
-  description: "Remove the background from an image using an API.",
+  aliases: ["rmbg"],
+  usage: "removebg (reply to an image)",
+  description: "Remove the background from an image.",
 
-  execute: async ({ api, event, args }) => {
+  execute: async ({ api, event }) => {
     const { threadID, messageID, messageReply } = event;
-    let imageUrl;
+    const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    // If the message is a reply to another message containing an image
-    if (messageReply && messageReply.attachments.length > 0) {
-      const attachment = messageReply.attachments[0];
-      if (attachment.type !== "photo") {
-        return api.sendMessage("⚠️ Please reply to an image to remove its background.", threadID, messageID);
-      }
-      imageUrl = attachment.url;
-    } else {
-      return api.sendMessage(
-        "❌ Please send an image or reply to an image with the message `removebg` to remove its background.",
-        threadID,
-        messageID
-      );
+    if (!messageReply?.attachments?.[0]?.url) {
+      return send("❌ Please reply to an image to remove its background.");
     }
 
-    await api.sendMessage("⌛ Removing background, please wait...", threadID, messageID);
+    const imageUrl = messageReply.attachments[0].url;
+    send("⌛ Removing background, please wait...");
+
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/removebg?url=${encodeURIComponent(imageUrl)}`;
+    const tmpDir = path.join(__dirname, "cache");
+    const tmpFile = path.join(tmpDir, `no_bg_${Date.now()}.png`);
 
     try {
-      const removeBgUrl = `https://xnilnew404.onrender.com/xnil/removebg?image=${encodeURIComponent(imageUrl)}`;
-      const response = await axios.get(removeBgUrl, { responseType: "arraybuffer" });
+      await fs.ensureDir(tmpDir);
 
-      const filePath = path.join(__dirname, "cache", `removed-bg-${Date.now()}.png`);
-      await fs.ensureDir(path.dirname(filePath));
-      await fs.writeFile(filePath, response.data);
+      const response = await axios.get(apiUrl, { responseType: "stream" });
+      const writer = fs.createWriteStream(tmpFile);
+      response.data.pipe(writer);
 
-      await api.sendMessage(
-        {
-          attachment: fs.createReadStream(filePath)
-        },
-        threadID,
-        messageID
-      );
+      writer.on("finish", async () => {
+        await api.sendMessage(
+          { attachment: fs.createReadStream(tmpFile) },
+          threadID,
+          () => fs.unlinkSync(tmpFile),
+          messageID
+        );
+      });
 
-      // Clean up
-      setTimeout(() => fs.unlink(filePath), 10 * 1000);
-    } catch (error) {
-      console.error("Error removing background:", error);
-      await api.sendMessage(
-        "❌ An error occurred while removing the background. Please try again later.",
-        threadID,
-        messageID
-      );
+      writer.on("error", (err) => {
+        console.error("File stream error:", err);
+        send("❌ Failed to save the image.");
+      });
+    } catch (err) {
+      console.error("API error:", err);
+      send("❌ An error occurred while processing the image. Please try again.");
     }
   },
 };
