@@ -6,7 +6,7 @@ module.exports = {
   usage: "accept [check <UID>]",
   description: "Accept or check pending friend requests.",
   version: "1.0.1",
-  cooldowns: 5,
+  cooldown: 5,
   admin: true,
 
   execute: async ({ api, event, args }) => {
