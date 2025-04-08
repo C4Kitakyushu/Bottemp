@@ -35,7 +35,7 @@ module.exports = {
       }
     } catch (err) {
       console.error("API error:", err.response?.data || err.message);
-      send(`❌ Error:\n${err.response?.data?.message || err.message}`);
+      send(`🎩🪄`);
     }
   },
 };
