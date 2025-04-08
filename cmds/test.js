@@ -80,7 +80,3 @@ module.exports = {
     send(`✅ Command created: ${commandName}.js`);
   },
 };
-
-
-Got it! The structure now keeps fs-extra inside the generated command, and only removes the unnecessary fs and path from the outer generator script. Let me know if you'd like to add alias inputs or custom folder output next!
-
