@@ -1,20 +1,22 @@
 const axios = require("axios");
 
 module.exports = {
-  name: "gettoken",
+  name: "test",
   aliases: ["tokeninfo"],
-  usage: "gettoken <username> <password>",
+  usage: "gettoken <username | password>",
   description: "Fetch session information using username and password from Hazeyyy API.",
 
   execute: async ({ api, event, args }) => {
     const { threadID, messageID } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    if (args.length < 2) {
-      return send("❌ Please provide a username and password.\nUsage: gettoken <username> <password>");
+    const input = args.join(" ");
+    const [username, password] = input.split("|").map((x) => x.trim());
+
+    if (!username || !password) {
+      return send("❌ Please provide a username and password.\nUsage: gettoken username | password");
     }
 
-    const [username, password] = args;
     const apiUrl = `https://hazeyyyy-rest-apis.onrender.com/api/token?username=${username}&password=${password}`;
 
     try {
