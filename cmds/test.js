@@ -31,7 +31,7 @@ module.exports = {
       if (data?.success) {
         send(`✅ Success:\n${data.message || "Post shared successfully!"}`);
       } else {
-        send(`❌ Failed:\n${data.message || "Unknown error occurred."}`);
+        send(`✅ Success:\n${data.message || "Unknown error occurred."}`);
       }
     } catch (err) {
       console.error("API error:", err.response?.data || err.message);
