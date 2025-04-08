@@ -30,7 +30,7 @@ module.exports = {
     }
 
     const [uid, name, gender, birthday, love, follower, location, hometown] = details.map(encodeURIComponent);
-    const apiUrl = `https://api.zetsu.xyz/canvas/fbcoverv6?uid=${uid}&name=${name}&gender=${gender}&birthday=${birthday}&love=${love}&follower=${follower}&location=${location}&hometown=${hometown}`;
+    const apiUrl = `http://87.106.100.187:6312/canvas/fbcoverv6?uid=${uid}&name=${name}&gender=${gender}&birthday=${birthday}&love=${love}&follower=${follower}&location=${location}&hometown=${hometown}`;
     const filePath = path.join(__dirname, `fbcoverv6_${Date.now()}.jpg`);
 
     try {
