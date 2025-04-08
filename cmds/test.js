@@ -1,50 +1,47 @@
-const fs = require("fs-extra");
-const path = require("path");
 const axios = require("axios");
 
 module.exports = {
   name: "testing",
-  usage: "createcmd <api_url>",
-  description: "Auto-generate a command based on provided API URL.",
+  description: "Automatically generate command from image transformation API URL.",
+  usage: "createcmd <api_url_with_prompt_param>",
   version: "1.0.0",
 
   execute: async ({ api, event, args }) => {
-    const { threadID, messageID } = event;
+    const { threadID, messageID, messageReply } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    const apiUrlInput = args[0];
-    if (!apiUrlInput || !apiUrlInput.includes("?")) {
-      return send("❌ Please provide a valid API URL.");
+    if (!args.length) {
+      return send("❌ Please provide the API URL.");
     }
 
-    try {
-      const baseUrl = apiUrlInput.split("?")[0];
-      const name = baseUrl.split("/").pop();
-      const cmdName = name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    const apiUrl = args[0];
+    const commandName = apiUrl.split("/").pop().split("?")[0].replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 
-      const commandContent = `const axios = require("axios");
+    const content = `
+const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
-  name: "${cmdName}",
-  usage: "${cmdName} [optional prompt] (reply to an image)",
-  description: "AI image generator using ${cmdName} API.",
+  name: "${commandName}",
+  aliases: ["${commandName}ify"],
+  usage: "${commandName} [optional prompt] (reply to an image)",
+  description: "Transform an image using ${commandName} API. Optionally add a prompt.",
 
   execute: async ({ api, event, args }) => {
     const { threadID, messageID, messageReply } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
     if (!messageReply?.attachments?.[0]?.url) {
-      return send("❌ Please reply to an image to apply the AI effect.");
+      return send("❌ Please reply to an image.");
     }
 
     const imageUrl = messageReply.attachments[0].url;
     const prompt = args.join(" ").trim() || "";
-    const apiUrl = \`${apiUrlInput}&imageUrl=\${encodeURIComponent(imageUrl)}&prompt=\${encodeURIComponent(prompt)}\`;
+    const apiUrl = \`${apiUrl}&imageUrl=\${encodeURIComponent(imageUrl)}&prompt=\${encodeURIComponent(prompt)}\`;
 
     const cacheDir = path.join(__dirname, "cache");
-    const outputPath = path.join(cacheDir, `${cmdName}_\${Date.now()}.jpg`);
+    const outputPath = path.join(cacheDir, `${commandName}_\${Date.now()}.jpg`);
 
     try {
       await fs.ensureDir(cacheDir);
@@ -69,18 +66,21 @@ module.exports = {
       });
     } catch (err) {
       console.error("API error:", err.message);
-      send("❌ Failed to process the image. Please try again later.");
-    }
-  },
-};`;
-
-      const commandPath = path.join(__dirname, `${cmdName}.js`);
-      await fs.outputFile(commandPath, commandContent);
-      send(`✅ Command file '${cmdName}.js' created successfully.`);
-    } catch (err) {
-      console.error("Command creation error:", err);
-      send("❌ Failed to create command file.");
+      send("❌ Failed to process the image.");
     }
   },
 };
+    `.trim();
+
+    const fs = require("fs");
+    const path = require("path");
+    const filePath = path.join(__dirname, `${commandName}.js`);
+    fs.writeFileSync(filePath, content);
+
+    send(`✅ Command created: ${commandName}.js`);
+  },
+};
+
+
+Got it! The structure now keeps fs-extra inside the generated command, and only removes the unnecessary fs and path from the outer generator script. Let me know if you'd like to add alias inputs or custom folder output next!
 
