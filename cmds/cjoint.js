@@ -3,38 +3,50 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
-  name: "cjoint",
-  description: "Upload an image URL to cjoint and return the result link.",
-  usage: "cjoint <image URL>",
-  version: "1.0.0",
+  name: "remini",
+  aliases: ["enhance"],
+  usage: "remini (reply to an image)",
+  description: "Enhance an image using the Remini API.",
 
-  execute: async ({ api, event, args }) => {
-    const { threadID, messageID } = event;
-    const imageUrl = args[0];
+  execute: async ({ api, event }) => {
+    const { threadID, messageID, messageReply } = event;
+    const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    if (!imageUrl) {
-      return api.sendMessage(
-        "❌ Please provide an image",
-        threadID,
-        messageID
-      );
+    // Ensure the user replied to an image
+    if (!messageReply?.attachments?.[0]?.url) {
+      return send("❌ Please reply to an image to enhance it.");
     }
 
-    const apiUrl = `https://ccprojectapis.ddns.net/api/cjoint?url=${encodeURIComponent(imageUrl)}`;
+    const imageUrl = messageReply.attachments[0].url;
+    send("⌛ Enhancing image, please wait...");
+
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?url=${encodeURIComponent(imageUrl)}&stream=true`;
+    const tmpDir = path.join(__dirname, "cache");
+    const tmpFile = path.join(tmpDir, `remini_${Date.now()}.jpg`);
 
     try {
-      api.sendMessage("⏳ Uploading image to Cjoint, please wait...", threadID, messageID);
+      await fs.ensureDir(tmpDir);
 
-      const response = await axios.get(apiUrl);
+      const response = await axios.get(apiUrl, { responseType: "stream" });
+      const writer = fs.createWriteStream(tmpFile);
+      response.data.pipe(writer);
 
-      if (response.data && response.data.result) {
-        return api.sendMessage(`✅ Uploaded:\n${response.data.result}`, threadID, messageID);
-      } else {
-        return api.sendMessage("❌ Failed to get a valid response from the API.", threadID, messageID);
-      }
-    } catch (error) {
-      console.error("Cjoint API error:", error);
-      return api.sendMessage("❌ An error occurred while uploading the image.", threadID, messageID);
+      writer.on("finish", async () => {
+        await api.sendMessage(
+          { attachment: fs.createReadStream(tmpFile) },
+          threadID,
+          () => fs.unlinkSync(tmpFile),
+          messageID
+        );
+      });
+
+      writer.on("error", (err) => {
+        console.error("File write error:", err);
+        send("❌ Failed to save the enhanced image.");
+      });
+    } catch (err) {
+      console.error("Enhance error:", err);
+      send("❌ An error occurred while enhancing the image. Please try again later.");
     }
   },
 };
