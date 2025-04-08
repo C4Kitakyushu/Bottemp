@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 module.exports = {
-  name: "test",
+  name: "gettoken",
   aliases: ["tokeninfo"],
   usage: "gettoken <username> <password>",
   description: "Fetch session information using username and password from Hazeyyy API.",
@@ -22,17 +22,13 @@ module.exports = {
       const data = res.data;
 
       if (data?.status && data?.session_key) {
-        // Split the username and password with '|'
-        const credentials = `${username} | ${password}`;
-
         const result = `
 ✅ Session Retrieved Successfully!
 
-• Credentials: ${credentials}
-• UID: ${data.uid}
-• Session Key: ${data.session_key}
-• Access Token: ${data.access_token}
-• Machine ID: ${data.machine_id}
+- Username: ${data.uid}
+- Session Key: ${data.session_key}
+- Access Token: ${data.access_token}
+- Machine ID: ${data.machine_id}
 
 Use this info responsibly.
         `.trim();
