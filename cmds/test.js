@@ -3,79 +3,39 @@ const axios = require("axios");
 module.exports = {
   name: "test",
   aliases: ["autoshare"],
-  description: "Auto share a Facebook post using Graph API",
-  usage: "shareboost <token> | <post_url> | <privacy>",
-  version: "1.1.0",
-
+  usage: "fbshare <token|cookie> | <post_url> | <privacy> | <share_count> | <interval_seconds>",
+  description: "Share a Facebook post using the fbshare GET API method.",
+  
   execute: async ({ api, event, args }) => {
     const { threadID, messageID } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    if (!args.length || !args.join(" ").includes("|")) {
-      return send("❌ Incorrect format.\n\nUsage:\nshareboost <token> | <post_url> | <privacy>\nExample:\nshareboost EAA... | https://facebook.com/... | EVERYONE");
+    if (!args.length) {
+      return send("❌ Usage:\nfbshare <token|cookie> | <post_url> | <privacy> | <share_count> | <interval_seconds>");
     }
 
-    const [accessToken, shareUrl, privacy] = args.join(" ").split("|").map(i => i.trim());
+    const [cookieOrToken, postUrl, privacy, shareAmount, intervalSeconds] = args.join(" ").split("|").map(i => i.trim());
 
-    if (!accessToken || !shareUrl || !privacy) {
-      return send("❌ Missing required parameters.\nMake sure you provide: token | post_url | privacy.");
+    if (!cookieOrToken || !postUrl || !privacy || !shareAmount || !intervalSeconds) {
+      return send("❌ Missing required parameters.\nUsage:\nfbshare <token|cookie> | <post_url> | <privacy> | <share_count> | <interval_seconds>");
     }
 
-    const shareCount = 100; // Default: 100 shares
-    const timeInterval = 1000; // 1 second between each
-    const deleteAfter = 60 * 60; // 1 hour
+    send(`⏳ Sharing post...\nPost: ${postUrl}\nShares: ${shareAmount}\nInterval: ${intervalSeconds}s`);
 
-    let sharedCount = 0;
-    let lastPostId = null;
+    const apiUrl = `https://haji-mix.up.railway.app/api/fbshare?postUrl=${encodeURIComponent(postUrl)}&cookieOrToken=${encodeURIComponent(cookieOrToken)}&shareAmount=${encodeURIComponent(shareAmount)}&privacy=${encodeURIComponent(privacy)}&intervalSeconds=${encodeURIComponent(intervalSeconds)}`;
 
-    send(`🚀 Starting Share Boost...\nShares: ${shareCount}\nPrivacy: ${privacy}`);
+    try {
+      const response = await axios.get(apiUrl);
+      const data = response.data;
 
-    const sharePost = async () => {
-      try {
-        const response = await axios.post(
-          `https://graph.facebook.com/me/feed?access_token=${accessToken}`,
-          {
-            link: shareUrl,
-            privacy: { value: privacy },
-            no_story: true
-          }
-        );
-
-        sharedCount++;
-        const postId = response?.data?.id;
-        lastPostId = postId;
-
-        api.sendMessage(`✅ Shared\nPost ID: ${postId || 'Unknown'}`, threadID);
-
-        if (sharedCount === shareCount) {
-          clearInterval(timer);
-          send("✅ Done sharing!");
-
-          if (lastPostId) {
-            setTimeout(() => deletePost(lastPostId), deleteAfter * 1000);
-          }
-        }
-      } catch (err) {
-        console.error("Share error:", err?.response?.data || err.message);
-        send("❌ Failed to share post. Please check your token or permissions.");
+      if (data?.success) {
+        send(`✅ Success:\n${data.message || "Post shared successfully!"}`);
+      } else {
+        send(`❌ Failed:\n${data.message || "Unknown error occurred."}`);
       }
-    };
-
-    const deletePost = async (postId) => {
-      try {
-        await axios.delete(`https://graph.facebook.com/${postId}?access_token=${accessToken}`);
-        send(`🗑️ Post deleted: ${postId}`);
-      } catch (err) {
-        console.error("Delete error:", err?.response?.data || err.message);
-        send("❌ Failed to delete the post.");
-      }
-    };
-
-    const timer = setInterval(sharePost, timeInterval);
-
-    setTimeout(() => {
-      clearInterval(timer);
-      send("⏹️ Stopped due to timeout.");
-    }, shareCount * timeInterval + 1000);
+    } catch (err) {
+      console.error("API error:", err.response?.data || err.message);
+      send(`❌ Error:\n${err.response?.data?.message || err.message}`);
+    }
   },
 };
