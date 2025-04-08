@@ -3,10 +3,10 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
-  name: "remini",
-  aliases: ["enhance"],
-  usage: "remini (reply to an image)",
-  description: "Enhance an image using the Remini API.",
+  name: "cjoint",
+  aliases: ["uploadimage"],
+  usage: "cjoint (reply to an image)",
+  description: "Upload an image to the ccprojectapis service and return the link.",
 
   execute: async ({ api, event }) => {
     const { threadID, messageID, messageReply } = event;
@@ -14,39 +14,30 @@ module.exports = {
 
     // Ensure the user replied to an image
     if (!messageReply?.attachments?.[0]?.url) {
-      return send("❌ Please reply to an image to enhance it.");
+      return send("❌ Please reply to an image to upload.");
     }
 
     const imageUrl = messageReply.attachments[0].url;
-    send("⌛ Enhancing image, please wait...");
+    send("⌛ Uploading image, please wait...");
 
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?url=${encodeURIComponent(imageUrl)}&stream=true`;
+    const apiUrl = `https://ccprojectapis.ddns.net/api/cjoint?url=${encodeURIComponent(imageUrl)}`;
     const tmpDir = path.join(__dirname, "cache");
-    const tmpFile = path.join(tmpDir, `remini_${Date.now()}.jpg`);
+    const tmpFile = path.join(tmpDir, `cjoint_${Date.now()}.jpg`);
 
     try {
       await fs.ensureDir(tmpDir);
 
-      const response = await axios.get(apiUrl, { responseType: "stream" });
-      const writer = fs.createWriteStream(tmpFile);
-      response.data.pipe(writer);
+      const response = await axios.get(apiUrl);
+      const { data } = response;
 
-      writer.on("finish", async () => {
-        await api.sendMessage(
-          { attachment: fs.createReadStream(tmpFile) },
-          threadID,
-          () => fs.unlinkSync(tmpFile),
-          messageID
-        );
-      });
-
-      writer.on("error", (err) => {
-        console.error("File write error:", err);
-        send("❌ Failed to save the enhanced image.");
-      });
+      if (data && data.url) {
+        send(`✅ Image uploaded successfully: ${data.url}`);
+      } else {
+        send("❌ Failed to upload the image.");
+      }
     } catch (err) {
-      console.error("Enhance error:", err);
-      send("❌ An error occurred while enhancing the image. Please try again later.");
+      console.error("Upload error:", err);
+      send("❌ An error occurred while uploading the image. Please try again later.");
     }
   },
 };
