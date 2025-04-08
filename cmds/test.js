@@ -45,7 +45,7 @@ module.exports = {
         const postId = response?.data?.id;
         lastPostId = postId;
 
-        api.sendMessage(`✅ Shared [${sharedCount}/${shareCount}]\nPost ID: ${postId || 'Unknown'}`, threadID);
+        api.sendMessage(`✅ Shared\nPost ID: ${postId || 'Unknown'}`, threadID);
 
         if (sharedCount === shareCount) {
           clearInterval(timer);
