@@ -27,7 +27,7 @@ module.exports = {
     }
 
     const [name, id, subname, color] = details.map((d) => encodeURIComponent(d));
-    const apiUrl = `https://api.zetsu.xyz/canvas/fbcoverv2?name=${name}&id=${id}&subname=${subname}&color=${color}`;
+    const apiUrl = `http://87.106.100.187:6312/canvas/fbcoverv2?name=${name}&id=${id}&subname=${subname}&color=${color}`;
     const filePath = path.join(__dirname, `fbcover_${Date.now()}.jpg`);
 
     try {
