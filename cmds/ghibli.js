@@ -5,70 +5,72 @@ const path = require("path");
 module.exports = {
     name: "fbdl",
     usePrefix: false,
-    usage: "Send a Facebook video by detecting a URL",
+    usage: "Downloads Facebook videos using Kaiz API",
     version: "1.0",
 
     execute: async ({ api, event }) => {
         const { threadID, messageID, body } = event;
+        const urlRegex = /(https?:\/\/[^\s]+)/gi;
+        const foundUrls = body.match(urlRegex);
 
-        if (!body || !body.includes("facebook.com")) return;
+        if (!foundUrls) return;
 
-        try {
-            api.setMessageReaction("🕐", messageID, () => {}, true);
+        const videoUrl = foundUrls[0];
 
-            // Fetch download info from the API
-            const response = await axios.get(`https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(body)}`);
-            const { success, title, hd, sd } = response.data;
+        // Check if it's a Facebook URL
+        if (!videoUrl.includes("facebook.com")) return;
 
-            if (!success || (!hd && !sd)) {
-                api.setMessageReaction("❌", messageID, () => {}, true);
-                return api.sendMessage("⚠️ No downloadable video found. Please check the URL.", threadID, messageID);
-            }
+        api.sendMessage(`🔍 **Detected Facebook URL:** ${videoUrl}`, threadID, async () => {
+            api.setMessageReaction("⏳", messageID, () => {}, true);
 
-            const videoUrl = hd || sd;
-            const filePath = path.join(__dirname, "fbvideo.mp4");
+            const apiUrl = `https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(videoUrl)}`;
 
-            // Download the video
-            const videoStream = await axios({
-                url: videoUrl,
-                method: "GET",
-                responseType: "stream",
-                headers: {
-                    "User-Agent": "Mozilla/5.0"
+            try {
+                const response = await axios.get(apiUrl);
+
+                if (!response.data || !response.data.video || !response.data.video.hd) {
+                    api.setMessageReaction("❌", messageID, () => {}, true);
+                    return api.sendMessage("⚠️ Could not retrieve video.", threadID, messageID);
                 }
-            });
 
-            const writer = fs.createWriteStream(filePath);
-            videoStream.data.pipe(writer);
+                const videoDownloadUrl = response.data.video.hd;
+                const filePath = path.join(__dirname, "fb_video.mp4");
 
-            writer.on("finish", async () => {
-                api.setMessageReaction("✅", messageID, () => {}, true);
+                const writer = fs.createWriteStream(filePath);
+                const videoResponse = await axios({
+                    url: videoDownloadUrl,
+                    method: "GET",
+                    responseType: "stream",
+                });
 
-                api.sendMessage({
-                    body: `🎬 ${title || "Facebook Video"}`,
-                    attachment: fs.createReadStream(filePath)
-                }, threadID, (err) => {
-                    if (err) {
-                        console.error("Send error:", err);
-                        return api.sendMessage("⚠️ Failed to send the video.", threadID);
-                    }
+                videoResponse.data.pipe(writer);
 
-                    fs.unlink(filePath, (unlinkErr) => {
-                        if (unlinkErr) console.error("File delete error:", unlinkErr);
+                writer.on("finish", async () => {
+                    api.setMessageReaction("✅", messageID, () => {}, true);
+
+                    const msg = {
+                        body: `🎬 Here's your Facebook video!`,
+                        attachment: fs.createReadStream(filePath),
+                    };
+
+                    api.sendMessage(msg, threadID, () => {
+                        fs.unlink(filePath, (err) => {
+                            if (err) console.error("❌ Failed to delete video:", err);
+                        });
                     });
-                }, messageID);
-            });
+                });
 
-            writer.on("error", (err) => {
-                console.error("Download error:", err);
+                writer.on("error", (err) => {
+                    console.error("❌ Download error:", err);
+                    api.setMessageReaction("❌", messageID, () => {}, true);
+                    api.sendMessage("⚠️ Error downloading video.", threadID, messageID);
+                });
+
+            } catch (err) {
+                console.error("❌ API error:", err);
                 api.setMessageReaction("❌", messageID, () => {}, true);
-                api.sendMessage("⚠️ Failed to download the video.", threadID, messageID);
-            });
-
-        } catch (error) {
-            console.error("API error:", error);
-            api.setMessageReaction("❌", messageID, () => {}, true);
-            api.sendMessage("⚠️ An error occurred while processing your request.", threadID, messageID);
-        }
+                api.sendMessage("⚠️ Failed to fetch from API.", threadID, messageID);
+            }
+        });
     },
 };
