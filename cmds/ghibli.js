@@ -3,52 +3,73 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
-  name: "ghibli",
-  aliases: ["ghibliart"],
-  usage: "ghibli [reply to image]",
-  description: "Convert a photo into Studio Ghibli style artwork.",
-  version: "2.2",
+  name: "fbdl",
+  aliases: ["fbdl"],
+  usage: "fbdownload <facebook_video_url>",
+  description: "Download a video from Facebook using the provided URL.",
+  version: "1.0.0",
 
-  execute: async ({ api, event }) => {
-    const { threadID, messageID, messageReply } = event;
+  execute: async ({ api, event, args }) => {
+    const { threadID, messageID } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-    // Check if user replied to an image
-    if (!messageReply?.attachments?.[0]?.url) {
-      return send("❌ Please reply to an image!");
+    // Validate input
+    if (args.length === 0) {
+      return send("❌ Please provide a Facebook video URL.\n\nExample:\nfbdownload https://www.facebook.com/watch/?v=1234567890");
     }
 
-    const imgUrl = messageReply.attachments[0].url;
-    const processingMsg = await send("✨ Turning your image into Ghibli-style...");
+    const videoUrl = args[0];
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(videoUrl)}`;
 
     try {
-      // Call Ghibli transformation API
-      const apiUrl = `https://betadash-api-swordslush-production.up.railway.app/ghibli?imageUrl=${encodeURIComponent(imgUrl)}`;
-      const response = await axios.get(apiUrl, { responseType: "stream" });
+      send("⏳ Fetching video, please wait...");
 
-      const imgPath = path.join(__dirname, "cache", `ghibli-${Date.now()}.jpg`);
-      await fs.ensureDir(path.dirname(imgPath));
+      // Fetch video download link from the API
+      const response = await axios.get(apiUrl);
+      const { success, hd, sd } = response.data;
 
-      const writer = fs.createWriteStream(imgPath);
-      response.data.pipe(writer);
+      if (!success) {
+        return send("❌ Failed to retrieve the video. Please check the URL and try again.");
+      }
 
-      writer.on("finish", () => {
-        api.sendMessage({
-          body: "✅ Here's your Ghibli-style artwork!",
-          attachment: fs.createReadStream(imgPath),
-        }, threadID, () => fs.unlinkSync(imgPath), messageID);
+      // Determine the best available quality
+      const downloadUrl = hd || sd;
+      if (!downloadUrl) {
+        return send("❌ No downloadable video found at the provided URL.");
+      }
 
-        api.unsendMessage(processingMsg.messageID);
+      // Define the path to save the video
+      const videoPath = path.join(__dirname, "cache", `fbvideo_${Date.now()}.mp4`);
+
+      // Ensure the cache directory exists
+      await fs.ensureDir(path.dirname(videoPath));
+
+      // Download the video
+      const videoResponse = await axios.get(downloadUrl, { responseType: "stream" });
+      const writer = fs.createWriteStream(videoPath);
+      videoResponse.data.pipe(writer);
+
+      writer.on("finish", async () => {
+        // Send the video file
+        await api.sendMessage(
+          {
+            body: "🎬 Here's your downloaded Facebook video:",
+            attachment: fs.createReadStream(videoPath),
+          },
+          threadID,
+          () => fs.unlinkSync(videoPath), // Delete the file after sending
+          messageID
+        );
       });
 
       writer.on("error", (err) => {
-        console.error("Stream error:", err);
-        send("❌ Failed to process the Ghibli-style image.");
+        console.error("File write error:", err);
+        send("❌ Failed to save the video.");
       });
 
-    } catch (err) {
-      console.error("Error:", err);
-      send("❌ Error generating the Ghibli image. Please try again.");
+    } catch (error) {
+      console.error("Error fetching video:", error);
+      send("❌ An error occurred while processing the video. Please try again.");
     }
-  }
+  },
 };
