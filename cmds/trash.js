@@ -15,7 +15,7 @@ module.exports = {
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
     if (!args.length) {
-      return send("❌ Usage: trashmeme <userid>\nExample: trashmeme 4");
+      return send("❌ Usage: trashmeme <userid>\nExample: trashmeme 10007547984389");
     }
 
     const userid = args[0].trim();
