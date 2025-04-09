@@ -20,7 +20,7 @@ module.exports = {
     const imageUrl = messageReply.attachments[0].url;
     send("⌛ Enhancing image, please wait...");
 
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?url=${encodeURIComponent(imageUrl)}&stream=true`;
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/upscalev3?url=${encodeURIComponent(imageUrl)}&stream=true`;
     const tmpDir = path.join(__dirname, "cache");
     const tmpFile = path.join(tmpDir, `remini_${Date.now()}.jpg`);
 
