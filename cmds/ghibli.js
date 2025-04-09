@@ -1,75 +1,74 @@
+const fs = require("fs");
 const axios = require("axios");
-const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
-  name: "fbdl",
-  aliases: ["fbdl"],
-  usage: "fbdownload <facebook_video_url>",
-  description: "Download a video from Facebook using the provided URL.",
-  version: "1.0.0",
+    name: "fbdl",
+    usePrefix: false,
+    usage: "Send a Facebook video by detecting a URL",
+    version: "1.0",
 
-  execute: async ({ api, event, args }) => {
-    const { threadID, messageID } = event;
-    const send = (msg) => api.sendMessage(msg, threadID, messageID);
+    execute: async ({ api, event }) => {
+        const { threadID, messageID, body } = event;
 
-    // Validate input
-    if (args.length === 0) {
-      return send("❌ Please provide a Facebook video URL.\n\nExample:\nfbdownload https://www.facebook.com/watch/?v=1234567890");
-    }
+        if (!body || !body.includes("facebook.com")) return;
 
-    const videoUrl = args[0];
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(videoUrl)}`;
+        try {
+            api.setMessageReaction("🕐", messageID, () => {}, true);
 
-    try {
-      send("⏳ Fetching video, please wait...");
+            // Fetch download info from the API
+            const response = await axios.get(`https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(body)}`);
+            const { success, title, hd, sd } = response.data;
 
-      // Fetch video download link from the API
-      const response = await axios.get(apiUrl);
-      const { success, hd, sd } = response.data;
+            if (!success || (!hd && !sd)) {
+                api.setMessageReaction("❌", messageID, () => {}, true);
+                return api.sendMessage("⚠️ No downloadable video found. Please check the URL.", threadID, messageID);
+            }
 
-      if (!success) {
-        return send("❌ Failed to retrieve the video. Please check the URL and try again.");
-      }
+            const videoUrl = hd || sd;
+            const filePath = path.join(__dirname, "fbvideo.mp4");
 
-      // Determine the best available quality
-      const downloadUrl = hd || sd;
-      if (!downloadUrl) {
-        return send("❌ No downloadable video found at the provided URL.");
-      }
+            // Download the video
+            const videoStream = await axios({
+                url: videoUrl,
+                method: "GET",
+                responseType: "stream",
+                headers: {
+                    "User-Agent": "Mozilla/5.0"
+                }
+            });
 
-      // Define the path to save the video
-      const videoPath = path.join(__dirname, "cache", `fbvideo_${Date.now()}.mp4`);
+            const writer = fs.createWriteStream(filePath);
+            videoStream.data.pipe(writer);
 
-      // Ensure the cache directory exists
-      await fs.ensureDir(path.dirname(videoPath));
+            writer.on("finish", async () => {
+                api.setMessageReaction("✅", messageID, () => {}, true);
 
-      // Download the video
-      const videoResponse = await axios.get(downloadUrl, { responseType: "stream" });
-      const writer = fs.createWriteStream(videoPath);
-      videoResponse.data.pipe(writer);
+                api.sendMessage({
+                    body: `🎬 ${title || "Facebook Video"}`,
+                    attachment: fs.createReadStream(filePath)
+                }, threadID, (err) => {
+                    if (err) {
+                        console.error("Send error:", err);
+                        return api.sendMessage("⚠️ Failed to send the video.", threadID);
+                    }
 
-      writer.on("finish", async () => {
-        // Send the video file
-        await api.sendMessage(
-          {
-            body: "🎬 Here's your downloaded Facebook video:",
-            attachment: fs.createReadStream(videoPath),
-          },
-          threadID,
-          () => fs.unlinkSync(videoPath), // Delete the file after sending
-          messageID
-        );
-      });
+                    fs.unlink(filePath, (unlinkErr) => {
+                        if (unlinkErr) console.error("File delete error:", unlinkErr);
+                    });
+                }, messageID);
+            });
 
-      writer.on("error", (err) => {
-        console.error("File write error:", err);
-        send("❌ Failed to save the video.");
-      });
+            writer.on("error", (err) => {
+                console.error("Download error:", err);
+                api.setMessageReaction("❌", messageID, () => {}, true);
+                api.sendMessage("⚠️ Failed to download the video.", threadID, messageID);
+            });
 
-    } catch (error) {
-      console.error("Error fetching video:", error);
-      send("❌ An error occurred while processing the video. Please try again.");
-    }
-  },
+        } catch (error) {
+            console.error("API error:", error);
+            api.setMessageReaction("❌", messageID, () => {}, true);
+            api.sendMessage("⚠️ An error occurred while processing your request.", threadID, messageID);
+        }
+    },
 };
