@@ -4,50 +4,51 @@ const path = require("path");
 
 module.exports = {
   name: "ghibli",
-  aliases: ["ghibliold"],
-  usage: "ghibliv1 (reply to an image)",
-  description: "Transform a replied image into Ghibli-style using the V1 API.",
-  version: "1.0.0",
+  aliases: ["ghibliart"],
+  usage: "ghibli [reply to image]",
+  description: "Convert a photo into Studio Ghibli style artwork.",
+  version: "2.2",
 
-  execute: async ({ api, event, args }) => {
+  execute: async ({ api, event }) => {
     const { threadID, messageID, messageReply } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
+    // Check if user replied to an image
     if (!messageReply?.attachments?.[0]?.url) {
-      return send("❌ Please reply to an image to transform it.");
+      return send("❌ Please reply to an image!");
     }
 
-    const imageUrl = encodeURIComponent(messageReply.attachments[0].url);
-    const apiUrl = `https://betadash-api-swordslush-production.up.railway.app/ghibli?imageUrl=${imageUrl}`;
-    const imgPath = path.join(__dirname, "cache", `ghibli_v1_${Date.now()}.jpg`);
+    const imgUrl = messageReply.attachments[0].url;
+    const processingMsg = await send("✨ Turning your image into Ghibli-style...");
 
     try {
-      await fs.ensureDir(path.dirname(imgPath));
-      send("⏳ Transforming image into Ghibli-style (v1), please wait...");
-
+      // Call Ghibli transformation API
+      const apiUrl = `https://betadash-api-swordslush-production.up.railway.app/ghibli?imageUrl=${encodeURIComponent(imgUrl)}`;
       const response = await axios.get(apiUrl, { responseType: "stream" });
+
+      const imgPath = path.join(__dirname, "cache", `ghibli-${Date.now()}.jpg`);
+      await fs.ensureDir(path.dirname(imgPath));
+
       const writer = fs.createWriteStream(imgPath);
       response.data.pipe(writer);
 
-      writer.on("finish", async () => {
-        await api.sendMessage(
-          {
-            body: "✅ Here's your Ghibli-style image (v1):",
-            attachment: fs.createReadStream(imgPath),
-          },
-          threadID,
-          () => fs.unlinkSync(imgPath),
-          messageID
-        );
+      writer.on("finish", () => {
+        api.sendMessage({
+          body: "✅ Here's your Ghibli-style artwork!",
+          attachment: fs.createReadStream(imgPath),
+        }, threadID, () => fs.unlinkSync(imgPath), messageID);
+
+        api.unsendMessage(processingMsg.messageID);
       });
 
       writer.on("error", (err) => {
-        console.error("File write error:", err);
-        send("❌ Failed to save the transformed image.");
+        console.error("Stream error:", err);
+        send("❌ Failed to process the Ghibli-style image.");
       });
-    } catch (error) {
-      console.error("API error:", error.message);
-      send("❌ Failed to transform the image. Please try again later.");
+
+    } catch (err) {
+      console.error("Error:", err);
+      send("❌ Error generating the Ghibli image. Please try again.");
     }
-  },
+  }
 };
