@@ -1,9 +1,9 @@
 const cron = require("node-cron");
 
 module.exports = {
-name: "accept",
+name: "acc",
 aliases: ["acc"],
-usage: "accept [check <UID>]",
+usage: "acc [check <UID>]",
 description: "Accept or check pending friend requests.",
 version: "1.0.1",
 cooldowns: 5,
@@ -104,7 +104,7 @@ for (const user of requests) {
   msg += `\n${count}. Name: ${user.node.name}\nID: ${user.node.id}\nUrl: ${user.node.url.replace("www.facebook", "fb")}\nTime: ${formattedTime}\n`;  
 }  
 
-msg += `\nTo approve a request, use: accept check <UID>`;  
+msg += `\nTo approve a request, use: acc check <UID>`;  
 send(msg);
 
 } catch (error) {
