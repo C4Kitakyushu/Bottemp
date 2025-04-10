@@ -9,7 +9,7 @@ const serverUrls = {
 module.exports = {
   name: "fbshare",
   aliases: ["autoboost"],
-  usage: "boost <cookie> | <post_url> | <amount> | <interval_seconds> | <server1/server2/server3>",
+  usage: "fbshare fbstate | post_url | amount | interval_seconds | choose server server1/server2/server3",
   description: "Boost Facebook post shares using specified server.",
 
   execute: async ({ api, event, args }) => {
@@ -17,13 +17,13 @@ module.exports = {
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
     if (!args.length) {
-      return send("Usage:\nboost <cookie> | <post_url> | <amount> | <interval_seconds> | <server1/server2/server3>");
+      return send("Usage example:\nfbshare fbstate | post_url | amount | delay | choose seever: server1/server2/server3");
     }
 
     const [cookie, url, amount, interval, serverKey] = args.join(" ").split("|").map(i => i.trim());
 
     if (!cookie || !url || !amount || !interval || !serverKey) {
-      return send("❌ Missing input.\nUsage:\nboost <cookie> | <post_url> | <amount> | <interval_seconds> | <server>");
+      return send("❌ Missing input.\nUsage:\nfbshare fbstate | post_url | amount | delay | server");
     }
 
     if (!serverUrls[serverKey]) {
