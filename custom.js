@@ -21,19 +21,6 @@ const scheduleTasks = (ownerID, api, config = { autoRestart: true, autoGreet: fa
         console.log("❌ Auto-restart is disabled.");
     }
 
-    // 📌 Auto-Greet Schedule
-    if (config.autoGreet) {
-        const greetings = [
-            { cronTime: '0 5 * * *', messages: [`Good morning! Have a great day ahead! ☀️`] },
-            { cronTime: '0 8 * * *', messages: [`⏰ Time Check: 8:00 AM! Wishing everyone a great morning! 😊`] },
-            { cronTime: '0 10 * * *', messages: [`Hello everyone! How’s your day going so far? 🤗`] },
-            { cronTime: '0 12 * * *', messages: [`🍽️ Lunchtime reminder! Take a break and enjoy your meal.`] },
-            { cronTime: '0 14 * * *', messages: [`📌 Stay focused! Don't forget your important tasks for today.`] },
-            { cronTime: '0 18 * * *', messages: [`🌆 Good evening! Hope you had a productive day!`] },
-            { cronTime: '0 20 * * *', messages: [`🌙 The day is almost over, take time to relax and recharge.`] },
-            { cronTime: '0 22 * * *', messages: [`😴 Good night, everyone! Sleep well and sweet dreams.`] },
-        ];
-
         // Function to send greetings
         greetings.forEach(greet => {
             cron.schedule(greet.cronTime, () => {
