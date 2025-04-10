@@ -11,8 +11,10 @@ module.exports = {
 
     const ingredient = args.join(" ");
     if (!ingredient) {
-      return send("❌ Please provide an ingredient.\nUsage: recipe <ingredient>");
+      return send("Please provide an ingredient.\nUsage: recipe <ingredient>");
     }
+
+    send(`🔍 Searching recipe for "${ingredient}", please wait...`);
 
     const apiUrl = `https://kaiz-apis.gleeze.com/api/recipe?ingredients=${encodeURIComponent(ingredient)}`;
 
@@ -24,15 +26,8 @@ module.exports = {
         return send("❌ No recipe found for that ingredient.");
       }
 
-      let message = `👨‍🍳 Recipe for "${ingredient}"\n`;
-      message += `Author: ${data.author || "Unknown"}\n\n`;
-      message += `${data.recipe}`;
-
-      // Split message if too long for Messenger
-      const chunks = message.match(/[\s\S]{1,1900}/g);
-      for (const chunk of chunks) {
-        await send(chunk);
-      }
+      const message = `${data.recipe}`;
+      send(message);
     } catch (err) {
       console.error("Recipe API Error:", err.message);
       send("❌ Failed to fetch recipe. Try again later.");
