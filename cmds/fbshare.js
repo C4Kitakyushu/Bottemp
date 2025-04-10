@@ -1,41 +1,57 @@
 const axios = require("axios");
 
+const serverUrls = {
+  server1: 'https://server1-u9fw.onrender.com',
+  server2: 'https://server-2-aggj.onrender.com',
+  server3: 'https://server-3-p6lg.onrender.com'
+};
+
 module.exports = {
   name: "fbshare",
-  aliases: ["autoshare"],
-  usage: "fbshare <cookie> | <post_url> | <privacy> | <share_count> | <interval_seconds>",
-  description: "fbshare using cookie.",
+  aliases: ["autoboost"],
+  usage: "boost <cookie> | <post_url> | <amount> | <interval_seconds> | <server1/server2/server3>",
+  description: "Boost Facebook post shares using specified server.",
 
   execute: async ({ api, event, args }) => {
     const { threadID, messageID } = event;
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
     if (!args.length) {
-      return send(" Usage example:\nfbshare token or cookie | post_url | privacy | share_count | interval_seconds\n\nDownload cookie: https://chrome-stats.com/d/hacigcgfiefikmkmmmncaiaijoffndpl/download");
+      return send("Usage:\nboost <cookie> | <post_url> | <amount> | <interval_seconds> | <server1/server2/server3>");
     }
 
-    const [cookieOrToken, postUrl, privacy, shareAmount, intervalSeconds] = args.join(" ").split("|").map(i => i.trim());
+    const [cookie, url, amount, interval, serverKey] = args.join(" ").split("|").map(i => i.trim());
 
-    if (!cookieOrToken || !postUrl || !privacy || !shareAmount || !intervalSeconds) {
-      return send("Usage example:\nfbshare cookie | post_url | privacy | share_count | interval_seconds");
+    if (!cookie || !url || !amount || !interval || !serverKey) {
+      return send("❌ Missing input.\nUsage:\nboost <cookie> | <post_url> | <amount> | <interval_seconds> | <server>");
     }
 
-    send(`⏳ Sharing post, please wait..\nPost: ${postUrl}\nShares: ${shareAmount}\nInterval: ${intervalSeconds}s`);
+    if (!serverUrls[serverKey]) {
+      return send(`❌ Invalid server. Available: server1, server2, server3`);
+    }
 
-    const apiUrl = `https://haji-mix.up.railway.app/api/fbshare?postUrl=${encodeURIComponent(postUrl)}&cookieOrToken=${encodeURIComponent(cookieOrToken)}&shareAmount=${encodeURIComponent(shareAmount)}&privacy=${encodeURIComponent(privacy)}&intervalSeconds=${encodeURIComponent(intervalSeconds)}`;
+    send(`⏳ Boosting post...\nPost: ${url}\nAmount: ${amount}\nInterval: ${interval}s\nServer: ${serverKey}`);
 
     try {
-      const response = await axios.get(apiUrl);
-      const data = response.data;
+      const res = await axios.post(`${serverUrls[serverKey]}/api/submit`, {
+        cookie,
+        url,
+        amount: parseInt(amount),
+        interval: parseInt(interval)
+      }, {
+        headers: { "Content-Type": "application/json" }
+      });
 
-      if (data?.success) {
-        send(`✅ Success:\n${data.message || "Post shared successfully!"}`);
+      const data = res.data;
+
+      if (data.status === 200) {
+        send(`✅ Success:\n${data.message || "Boost submitted successfully!"}`);
       } else {
-        send(`✅ Success:\n${data.message || "Unknown error occurred."}`);
+        send(`⚠️ Failed:\n${data.message || "Unknown error."}`);
       }
     } catch (err) {
-      console.error("API error:", err.response?.data || err.message);
-      send(`❌Opss! provide valid cookie`);
+      console.error("Boost error:", err.response?.data || err.message);
+      send("❌ Error submitting boost. Please check your inputs or try again later.");
     }
   },
 };
