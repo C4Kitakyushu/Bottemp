@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
-    name: "welcome",
+    name: "event",
 
     async execute(api, event) {
         const { logMessageType, logMessageData, threadID } = event;
