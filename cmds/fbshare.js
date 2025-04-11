@@ -17,7 +17,7 @@ module.exports = {
     const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
     if (!args.length) {
-      return send("Usage example:\nfbshare fbstate | post_url | amount | delay | choose seever: server1/server2/server3");
+      return send("Usage example:\nfbshare fbstate | post_url | amount | delay | choose server: server1/server2/server3");
     }
 
     const [cookie, url, amount, interval, serverKey] = args.join(" ").split("|").map(i => i.trim());
