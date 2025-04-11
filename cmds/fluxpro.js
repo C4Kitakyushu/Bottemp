@@ -16,7 +16,7 @@ module.exports = {
       return api.sendMessage('❌ Please provide a prompt.\n\nExample:\nfluxpro boy with sunglasses', threadID, messageID);
     }
 
-    const apiUrl = `https://hazeyyyy-rest-apis.onrender.com/api/raw?prompt=${encodeURIComponent(prompt)}`;
+    const apiUrl = `https://renzsuperb.onrender.com/api/fluxpro-ultra-raw?prompt=${encodeURIComponent(prompt)}`;
     const imgPath = path.join(__dirname, 'cache', `raw_${Date.now()}.png`);
 
     try {
