@@ -1,9 +1,9 @@
 const axios = require("axios");
 
 const serverUrls = {
-  server1: 'https://putanginamo-bogart-1.onrender.com',
-  server2: 'https://putanginamo-bogart-2.onrender.com',
-  server3: 'https://putanginamo-bogart-3.onrender.com'
+  server1: 'https://serverpota-3.onrender.com',
+  server2: 'https://serverpota-2.onrender.com',
+  server3: 'https://serverpota-1.onrender.com'
 };
 
 module.exports = {
